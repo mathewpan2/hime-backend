@@ -5,6 +5,7 @@ from discord.ext import tasks
 import asyncio
 # onmessage is a callback function that will be called when a message is received
 
+
 class Messages(ABC):
     def __init__(self, client, onmessage):
         self._client = client
@@ -58,7 +59,6 @@ class Discord(Messages):
                 print(message)
                 await client.get_channel(983138529775341650).send(message.response_text)
 
-        
         
         
         await client.start(self._client, reconnect=True)
