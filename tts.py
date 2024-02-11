@@ -2,8 +2,10 @@ from websockets.server import serve
 from websockets.exceptions import ConnectionClosed
 import asyncio
 from pydub import AudioSegment, exceptions
+from pydub.playback import play
 import json 
 import io 
+import time
 
 class TTS:
     def __init__(self):
@@ -66,10 +68,13 @@ async def tts_loop(voice, tts_queue, speech_queue):
     while True:
         message = await tts_queue.get()
         try:
+            start = time.time()
             res = await voice.generate_tts(message)
         except asyncio.CancelledError as e:
             raise e
         if res is not None:
+            end = time.time()
+            print(f"TTS Time: {end - start}s")
             message.audio_segment = res
             await speech_queue.put(message)
         else:
@@ -81,6 +86,6 @@ async def speech_loop(speech_queue):
         message = await speech_queue.get()
         print(f"Speech: {message.response_text}")
         if message.audio_segment is not None:
-            message.audio_segment.export(f'{message.user_name}.wav', format='wav')
+            play(message.audio_segment)
         else:
             print("Speech: No audio segment for message", message)
