@@ -3,8 +3,6 @@ from abc import ABC, abstractmethod
 import discord
 from discord.ext import tasks
 import asyncio
-# onmessage is a callback function that will be called when a message is received
-
 
 class Messages(ABC):
     def __init__(self, client, onmessage):
@@ -21,15 +19,6 @@ class Messages(ABC):
         pass
 
 
-# class MyClient(discord.Client):
-#     async def setup_hook(self) -> None:
-#         self.send_message_loop.start()
-        
-#     @tasks.loop(seconds=1)
-#     async def send_message_loop(self):
-#         print("loop is running")
-        
-
 class Discord(Messages):
     def __init__(self, client, onmessage, ttsqueue):
         self._client = client
@@ -44,7 +33,7 @@ class Discord(Messages):
         @client.event
         async def on_ready():
             print(f'We have logged in as {client.user}')
-            client.loop.create_task(send_message_loop())
+            # client.loop.create_task(send_message_loop())
         
         @client.event
         async def on_message(message):

@@ -14,8 +14,8 @@ from llm import LLM, llm_loop
 from messages import Discord
 from dotenv import load_dotenv
 import os
-from speechevent import ChatSpeechEvent
-
+from dataclass import ChatSpeechEvent
+from tts import TTS, tts_loop, speech_loop
 chat_messages = PriorityQueue(maxsize=3)
 tts_queue = Queue(maxsize=2)
 speech_queue = Queue(maxsize=2)
@@ -33,10 +33,14 @@ async def add_message(message: str, user: str):
 
 async def main():
     llm = LLM()
+    tts = TTS()
     messages = Discord(os.environ['TOKEN'], add_message, tts_queue)
     async with asyncio.TaskGroup() as tg:
         tg.create_task(llm.listen())
         tg.create_task(llm_loop(llm, chat_messages, tts_queue))
+        tg.create_task(tts.listen())
+        tg.create_task(tts_loop(tts, tts_queue, speech_queue))
+        tg.create_task(speech_loop(speech_queue))
         tg.create_task(messages.connect())
         print(f"started at {time.strftime('%X')}")
 

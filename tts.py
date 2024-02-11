@@ -1,13 +1,13 @@
 from websockets.server import serve
 from websockets.exceptions import ConnectionClosed
 import asyncio
-from pydub import AudioSegment
+from pydub import AudioSegment, exceptions
+import json 
+import io 
 
-class Voice:
+class TTS:
     def __init__(self):
         self._websocket_client = None
-        self.ready_for_speech = False
-        self.tts_paused = False
     
     async def listen(self):
         async with serve(self._websocket_handler, host='localhost', port = 9876) as server:
@@ -46,15 +46,41 @@ class Voice:
         if self._websocket_client is None:
             raise Exception("Voice: No client connected")
         try:
-            await self._send_message(message.response_text)
-            audio_segment = await self._recv_message()
-            return await asyncio.to_thread(AudioSegment.from_file, audio_segment)
+            request = {"message": message.response_text}
+            await self._send_message(json.dumps(request))
+            audio_bytes = await self._recv_message()
 
+            if audio_bytes is None:
+                print("Voice: No audio segment received")
+                return None
         except ConnectionClosed:
             print("Voice: Client is disconnected")
             self._websocket_client = None
+        try: 
+            return await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(audio_bytes), format="wav")
+        except exceptions.CouldntDecodeError:
+            print("Voice: Failed to decode audio segment")
+            return None
 
 async def tts_loop(voice, tts_queue, speech_queue):
-    pass
-    
+    while True:
+        message = await tts_queue.get()
+        try:
+            res = await voice.generate_tts(message)
+        except asyncio.CancelledError as e:
+            raise e
+        if res is not None:
+            message.audio_segment = res
+            await speech_queue.put(message)
+        else:
+            print("TTS failed for message", message)
     # message -> chat_messages -> response from llm -> tts_queue -> voice websocket -> back here
+
+async def speech_loop(speech_queue):
+    while True:
+        message = await speech_queue.get()
+        print(f"Speech: {message.response_text}")
+        if message.audio_segment is not None:
+            message.audio_segment.export(f'{message.user_name}.wav', format='wav')
+        else:
+            print("Speech: No audio segment for message", message)
