@@ -45,7 +45,6 @@ async def main():
         tg.create_task(speech_loop(speech_queue))
         tg.create_task(messages.listen())
         print(f"started at {time.strftime('%X')}")
-
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     # loop.add_signal_handler(signal.SIGINT, sys.exit) # TODO: clean shutdown

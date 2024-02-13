@@ -1,9 +1,8 @@
 
 from abc import ABC, abstractmethod
 import discord
-from discord.ext import tasks
-from stt_client import TranscriptionClient
-import asyncio
+from websockets.server import serve
+from websockets.exceptions import ConnectionClosed
 
 class Messages(ABC):
     def __init__(self, client, onmessage):
@@ -23,18 +22,35 @@ class DiscrodSTT(Messages):
         self._client = None
         self.onmessage = onmessage
     async def listen(self):
-        self._client = TranscriptionClient(
-            "0.0.0.0",
-            9090,
-            lang="en",
-            model="small",
-            onmessage=self._onmessage,
-        )
-        self._client()
-    async def _onmessage(self, message_content, message_author):
+        async with serve(self._websocket_handler, host='0.0.0.0', port = 9875) as server:
+            await server.serve_forever()
+    async def _websocket_handler(self, websocket):
+        if self._client is None:
+            print("STT: New client connected")
+            self._client = websocket
+            try:
+                async for message in websocket:
+                    self._onmessage(message, "discord")
+            except ConnectionClosed:
+                print("STT: Client disconnected")
+                self._client = None
+        else:
+            print("STT: Client already connected, rejecting new connection")
+    def _onmessage(self, message_content, message_author):
         self.onmessage(message_content, message_author)
+    
+    async def _recv_message(self):
+        if self._client is None:
+            return ""
+        try:
+            return await self._client.recv()
+        except ConnectionClosed:
+            print("STT: Client is disconnected")
+            self._client = None
 
-        self._client()
+
+
+
 
 class Discord(Messages):
     def __init__(self, client, onmessage, ttsqueue):

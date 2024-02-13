@@ -56,7 +56,6 @@ class Client:
         translate=False,
         model="small",
         srt_file_path="output.srt",
-        onmessage = None
     ):
         """
         Initializes a Client instance for audio recording and streaming to a server.
@@ -72,7 +71,6 @@ class Client:
             translate (bool, optional): Specifies if the task is translation. Default is False.
         """
         self.eos = True
-        self.onmessage = onmessage
         self.chunk = 4096
         self.format = pyaudio.paInt16
         self.channels = 1
@@ -118,6 +116,13 @@ class Client:
         else:
             print("[ERROR]: No host or port specified.")
             return
+        
+        # janky websocket to backend 
+        socket_url = "ws://localhost:9875"
+        self.backend_socket = websocket.WebSocketApp(socket_url)
+        self.backend_thread = threading.Thread(target=self.backend_socket.run_forever)
+        self.backend_thread.daemon = True
+        self.backend_thread.start()
 
         Client.INSTANCES[self.uid] = self
 
@@ -187,7 +192,7 @@ class Client:
         if len(text) > 0:
             self.curr_message += text + " "
         elif len(text) == 0 and len(self.curr_message) > 0:
-            self.onmessage(self.curr_message, 'discord')
+            self.backend_socket.send(self.curr_message)
             self.curr_message = ""
 
             # if n_segments:
@@ -486,11 +491,10 @@ class TranscriptionClient:
         lang=None,
         translate=False,
         model="small",
-        onmessage = None
     ):
-        self.client = Client(host, port, lang, translate, model, onmessage=onmessage)
+        self.client = Client(host, port, lang, translate, model)
 
-    async def __call__(self, audio=None, hls_url=None):
+    def __call__(self, audio=None, hls_url=None):
         """
         Start the transcription process.
 
