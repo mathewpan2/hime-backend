@@ -11,7 +11,7 @@ import sys
 import asyncio
 from asyncio.queues import Queue, PriorityQueue
 from llm import LLM, llm_loop
-from messages import Discord
+from messages import Discord, DiscrodSTT
 from dotenv import load_dotenv
 import os
 from dataclass import ChatSpeechEvent
@@ -22,7 +22,7 @@ speech_queue = Queue(maxsize=2)
 load_dotenv()
 
 
-async def add_message(message: str, user: str):
+def add_message(message: str, user: str):
     speech_event = ChatSpeechEvent(message, user)
     try: 
         chat_messages.put_nowait(speech_event)
@@ -31,22 +31,24 @@ async def add_message(message: str, user: str):
         # ignore message since queue is full 
         print("Chat message queue is full, message dropped")
 
+
+
 async def main():
     llm = LLM()
     tts = TTS()
-    messages = Discord(os.environ['TOKEN'], add_message, tts_queue)
+    messages = DiscrodSTT(onmessage=add_message)
     async with asyncio.TaskGroup() as tg:
         tg.create_task(llm.listen())
         tg.create_task(llm_loop(llm, chat_messages, tts_queue))
         tg.create_task(tts.listen())
         tg.create_task(tts_loop(tts, tts_queue, speech_queue))
         tg.create_task(speech_loop(speech_queue))
-        tg.create_task(messages.connect())
+        tg.create_task(messages.listen())
         print(f"started at {time.strftime('%X')}")
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.add_signal_handler(signal.SIGINT, sys.exit) # TODO: clean shutdown
+    # loop.add_signal_handler(signal.SIGINT, sys.exit) # TODO: clean shutdown
     loop.create_task(main())
     try:
         loop.run_forever()

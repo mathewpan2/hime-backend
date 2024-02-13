@@ -10,7 +10,7 @@ class LLM:
         self._websocket_client = None
     
     async def listen(self): # called to start the server
-        async with serve(self._websocket_handler, host='localhost', port = 9877) as server:  # creates the llm server 
+        async with serve(self._websocket_handler, host='0.0.0.0', port = 9877) as server:  # creates the llm server 
             await server.serve_forever()
     
     async def _websocket_handler(self, websocket):

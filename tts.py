@@ -2,17 +2,18 @@ from websockets.server import serve
 from websockets.exceptions import ConnectionClosed
 import asyncio
 from pydub import AudioSegment, exceptions
-from pydub.playback import play
+from pydub.utils import make_chunks
 import json 
 import io 
 import time
+import pyaudio
 
 class TTS:
     def __init__(self):
         self._websocket_client = None
     
     async def listen(self):
-        async with serve(self._websocket_handler, host='localhost', port = 9876) as server:
+        async with serve(self._websocket_handler, host='0.0.0.0', port = 9876) as server:
             await server.serve_forever()
 
     async def _websocket_handler(self, websocket):
@@ -86,6 +87,26 @@ async def speech_loop(speech_queue):
         message = await speech_queue.get()
         print(f"Speech: {message.response_text}")
         if message.audio_segment is not None:
-            play(message.audio_segment)
+            play_audio(message.audio_segment)
         else:
             print("Speech: No audio segment for message", message)
+
+def play_audio(seg):
+    p = pyaudio.PyAudio()
+    stream = p.open(format=p.get_format_from_width(seg.sample_width),
+                    channels=seg.channels,
+                    rate=seg.frame_rate,
+                    output=True,
+                    )
+
+    # Just in case there were any exceptions/interrupts, we release the resource
+    # So as not to raise OSError: Device Unavailable should play() be used again
+    try:
+        # break audio into half-second chunks (to allows keyboard interrupts)
+        for chunk in make_chunks(seg, 500):
+            stream.write(chunk._data)
+    finally:
+        stream.stop_stream()
+        stream.close()
+
+        p.terminate()

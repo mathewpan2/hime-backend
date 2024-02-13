@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 import discord
 from discord.ext import tasks
+from stt_client import TranscriptionClient
 import asyncio
 
 class Messages(ABC):
@@ -9,15 +10,31 @@ class Messages(ABC):
         self._client = client
         self.onmessage = onmessage
     
-
     @abstractmethod
-    async def connect(self, message):
+    async def listen(self, message):
         pass
 
     @abstractmethod
     async def _onmessage(self, message_content, message_author):
         pass
 
+class DiscrodSTT(Messages):
+    def __init__(self, onmessage):
+        self._client = None
+        self.onmessage = onmessage
+    async def listen(self):
+        self._client = TranscriptionClient(
+            "0.0.0.0",
+            9090,
+            lang="en",
+            model="small",
+            onmessage=self._onmessage,
+        )
+        self._client()
+    async def _onmessage(self, message_content, message_author):
+        self.onmessage(message_content, message_author)
+
+        self._client()
 
 class Discord(Messages):
     def __init__(self, client, onmessage, ttsqueue):
@@ -25,7 +42,7 @@ class Discord(Messages):
         self.onmessage = onmessage
         self.ttsqueue = ttsqueue
     
-    async def connect(self):
+    async def listen(self):
         intents = discord.Intents.default()
         intents.message_content = True
         client = discord.Client(intents=intents, ttsqueue=self.ttsqueue)
@@ -40,7 +57,7 @@ class Discord(Messages):
             if message.author == client.user or message.author.bot:
                 return
             if message.channel.id == 983138529775341650: # test
-                await self._onmessage(message.content, message.author.name)
+                self._onmessage(message.content, message.author.name)
         
         async def send_message_loop():
             while not client.is_closed():
@@ -52,6 +69,6 @@ class Discord(Messages):
         
         await client.start(self._client, reconnect=True)
 
-    async def _onmessage(self, message_content, message_author):
-        await self.onmessage(message_content, message_author)
+    def _onmessage(self, message_content, message_author):
+        self.onmessage(message_content, message_author)
 
