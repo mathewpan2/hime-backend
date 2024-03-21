@@ -3,7 +3,6 @@ from websockets.exceptions import ConnectionClosed
 import asyncio
 from pydub import AudioSegment, exceptions
 from pydub.utils import make_chunks
-from aiohttp import ClientSession
 import os
 import json
 import io
@@ -141,6 +140,7 @@ def play_audio(seg):
                     rate=seg.frame_rate,
                     output=True,
                     frames_per_buffer=CHUNK,
+                    output_device_index=12
                     )
     # Just in case there were any exceptions/interrupts, we release the resource
     # So as not to raise OSError: Device Unavailable should play() be used again
