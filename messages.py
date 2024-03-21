@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 # import discord
 from websockets.server import serve
 from websockets.exceptions import ConnectionClosed
+import json
 
 class Messages(ABC):
     def __init__(self, client, onmessage):
@@ -30,7 +31,9 @@ class DiscrodSTT(Messages):
             self._client = websocket
             try:
                 async for message in websocket:
-                    self._onmessage(message, "anon")
+                    message = json.loads(message)
+                    print(message)
+                    self._onmessage(message['speech'], "anon")
             except ConnectionClosed:
                 print("STT: Client disconnected")
                 self._client = None
