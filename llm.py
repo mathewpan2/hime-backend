@@ -68,9 +68,7 @@ async def llm_loop(llm, chat_messages, tts_queue):
         
         if response is not None:
             try:
-                response = json.loads(response)
-                message.response_text = response['response']
-                message.emotions = response['emotions']
+                message.response_text = response
                 await tts_queue.put(message)
             except asyncio.QueueFull:
                 print("TTS Queue is full, dropping message: " + message.response_text)

@@ -11,7 +11,7 @@ import sys
 import asyncio
 from asyncio.queues import Queue, PriorityQueue
 from llm import LLM, llm_loop
-from messages import Discord, DiscrodSTT
+from messages import DiscrodSTT
 from dotenv import load_dotenv
 import os
 from dataclass import ChatSpeechEvent
@@ -40,7 +40,6 @@ async def main():
     async with asyncio.TaskGroup() as tg:
         tg.create_task(llm.listen())
         tg.create_task(llm_loop(llm, chat_messages, tts_queue))
-        tg.create_task(tts.listen())
         tg.create_task(tts_loop(tts, tts_queue, speech_queue))
         tg.create_task(speech_loop(speech_queue))
         tg.create_task(messages.listen())
