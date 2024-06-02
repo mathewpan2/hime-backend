@@ -1,6 +1,7 @@
 import asyncio 
 from websockets.server import serve
 from websockets.exceptions import ConnectionClosed
+from dataclass import ChatSpeechEvent
 import traceback
 import time
 import json
@@ -56,7 +57,7 @@ class LLM:
 
 async def llm_loop(llm, chat_messages, tts_queue):
     while True:
-        message = await chat_messages.get()
+        message: ChatSpeechEvent = await chat_messages.get()
         try: 
             response = await llm.generate_response(message.user_message, message.user_name)
         except asyncio.CancelledError as e:
@@ -69,6 +70,7 @@ async def llm_loop(llm, chat_messages, tts_queue):
         if response is not None:
             try:
                 message.response_text = response
+                message.emotions.append("default")
                 await tts_queue.put(message)
             except asyncio.QueueFull:
                 print("TTS Queue is full, dropping message: " + message.response_text)

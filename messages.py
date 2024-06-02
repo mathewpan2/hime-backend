@@ -3,7 +3,10 @@ from abc import ABC, abstractmethod
 # import discord
 from websockets.server import serve
 from websockets.exceptions import ConnectionClosed
+from twitchio import Client
+from twitchio import Message
 import json
+import os 
 
 class Messages(ABC):
     def __init__(self, client, onmessage):
@@ -17,6 +20,21 @@ class Messages(ABC):
     @abstractmethod
     async def _onmessage(self, message_content, message_author):
         pass
+
+class Twitch(Messages):
+    def __init__(self, onmessage):
+        self.onmessage = onmessage
+    
+    async def listen(self):
+        client = Client(token=os.environ.get("TWITCH_TOKEN"), initial_channels=[os.environ.get("TWITCH_CHANNEL")])
+        client.event_message = self._onmessage
+        await client.connect()
+        print("Twitch Chat: Connected")
+    
+    async def _onmessage(self, message: Message):
+        self.onmessage(message.content, message.author.name)
+
+
 
 class DiscrodSTT(Messages):
     def __init__(self, onmessage):

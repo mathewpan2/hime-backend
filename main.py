@@ -11,11 +11,11 @@ import sys
 import asyncio
 from asyncio.queues import Queue, PriorityQueue
 from llm import LLM, llm_loop
-from messages import DiscrodSTT
+from messages import Twitch
 from dotenv import load_dotenv
 import os
-from dataclass import ChatSpeechEvent
-from tts import TTS, tts_loop, speech_loop
+from dataclass import ChatSpeechEvent, TTSEvent
+from unity_tts import TTS, tts_loop
 chat_messages = PriorityQueue(maxsize=3)
 tts_queue = Queue(maxsize=2)
 speech_queue = Queue(maxsize=2)
@@ -31,18 +31,17 @@ def add_message(message: str, user: str):
         # ignore message since queue is full 
         print("Chat message queue is full, message dropped")
 
-
-
 async def main():
     llm = LLM()
     tts = TTS()
-    messages = DiscrodSTT(onmessage=add_message)
+    messages = Twitch(onmessage=add_message)
     async with asyncio.TaskGroup() as tg:
         tg.create_task(llm.listen())
+        tg.create_task(tts.listen())
+        tg.create_task(messages.listen())
         tg.create_task(llm_loop(llm, chat_messages, tts_queue))
         tg.create_task(tts_loop(tts, tts_queue, speech_queue))
-        tg.create_task(speech_loop(speech_queue))
-        tg.create_task(messages.listen())
+        # tg.create_task(speech_loop(speech_queue, tts))
         print(f"started at {time.strftime('%X')}")
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
