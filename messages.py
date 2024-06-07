@@ -35,7 +35,6 @@ class Twitch(Messages):
         self.onmessage(message.content, message.author.name)
 
 
-
 class DiscrodSTT(Messages):
     def __init__(self, onmessage):
         self._client = None
@@ -60,14 +59,6 @@ class DiscrodSTT(Messages):
     def _onmessage(self, message_content, message_author):
         self.onmessage(message_content, message_author)
     
-    async def _recv_message(self):
-        if self._client is None:
-            return ""
-        try:
-            return await self._client.recv()
-        except ConnectionClosed:
-            print("STT: Client is disconnected")
-            self._client = None
 
 
 
