@@ -16,10 +16,10 @@ from dotenv import load_dotenv
 from dataclass import ChatSpeechEvent, UnitySpeechEvent
 from azure_tts import TTS, tts_loop
 from unity import Unity, unity_loop
-from control_panel import  ControlPanel, control_panel_recv_loop
-message_queue = PriorityQueue(maxsize=3)
-tts_queue = Queue(maxsize=2)
-speech_queue = Queue(maxsize=6)
+from control_panel import  ControlPanel, control_panel_loop
+message_queue = PriorityQueue(maxsize=10)
+tts_queue = Queue(maxsize=10)
+speech_queue = Queue(maxsize=10)
 load_dotenv()
 
 
@@ -39,13 +39,12 @@ async def main():
     tts = TTS()
     classifier = EmotionsClassifier()
     messages = Twitch(onmessage=add_message)
-    speech_queue.put_nowait(UnitySpeechEvent(full_message="Hello, I am Hime! How can I help you?"))
     async with asyncio.TaskGroup() as tg:
         tg.create_task(llm.listen())
         tg.create_task(unity.listen())
         tg.create_task(messages.listen())
         tg.create_task(control.listen())
-        tg.create_task(control_panel_recv_loop(control))
+        tg.create_task(control_panel_loop(control))
         tg.create_task(unity_loop(unity, control, speech_queue))
         tg.create_task(llm_loop(llm, classifier, message_queue, tts_queue))
         tg.create_task(tts_loop(tts, tts_queue, speech_queue))
@@ -55,6 +54,10 @@ async def main():
 
     
 if __name__ == '__main__':
+    # with open("tts.ogg", "rb") as f:
+    #     audio = f.read()
+    # print(len(audio))
+    # speech_queue.put_nowait(UnitySpeechEvent("NewSpeech", "Hello, world!", "Hello, world!", "default", audio))
     loop = asyncio.get_event_loop()
     # loop.add_signal_handler(signal.SIGINT, sys.exit) # TODO: clean shutdown
     loop.create_task(main())

@@ -9,8 +9,6 @@ class ChatSpeechEvent():
     priority: int = 0
     user_message: str = field(default=None, compare=False)
     user_name: str = field(default=None, compare=False)
-    response_text: List[str] = field(default_factory=None, compare=False)
-    emotions: List[str] = field(default_factory=None, compare=False)
     def __init__(self, user_message, user_name):
         self.priority = 0 #TODO: implement priority
         self.user_message = user_message
@@ -18,12 +16,32 @@ class ChatSpeechEvent():
 
 
 
+@dataclass
+class HimeSpeechEvent():
+    type: str = field(default=None)
+    prompt: str = field(default=None)
+    response: str = field(default=None)
+    emotion: str = field(default=None)
+
+
+
+# response hime-ai
+@dataclass
+class HimeResponse():
+    result: str = field(default=None)
+    type: str = field(default=None)
+    response: str = field(default=None)
+    def __init__(self, result, type, response):
+        self.result = result
+        self.type = type
+        self.response = response
+
+
 # Unity
 @dataclass
 class UnitySpeechEvent():
     type: str = field(default=None)
-    full_message: str = field(default=None)
-    message: str = field(default=None)
+    response: str = field(default=None)
     emotion: str = field(default=None)
     audio: bytes = field(default=None)
 

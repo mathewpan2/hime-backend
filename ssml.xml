@@ -1,9 +1,8 @@
 <speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
-<voice name="en-US-NancyNeural"><s /><mstts:express-as style="Default">
+<voice name="en-US-SaraNeural"><s /><mstts:express-as style=[emotion]>
     <prosody pitch="+23.00%">[text]</prosody>
-    </mstts:express-as style=[emotion] styledegree=1.0><s />
+    </mstts:express-as><s />
 </voice>
 </speak>
 
 
-<!--sara, jane, nancy-->

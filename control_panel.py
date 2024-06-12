@@ -8,9 +8,8 @@ class ControlPanel(WS):
     async def send_message(self, message):
         res = await self._send_message(json.dumps(message.__dict__))
     
-async def control_panel_recv_loop(control_panel: ControlPanel):
+async def control_panel_loop(control_panel: ControlPanel):
     while True:
-        await control_panel.awake_event.wait()
         request = await control_panel._recv_message()
         if request is not None:
             request = json.loads(request)

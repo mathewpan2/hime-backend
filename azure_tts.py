@@ -1,7 +1,7 @@
 import azure.cognitiveservices.speech as speechsdk
 import asyncio
 from asyncio.queues import Queue
-from dataclass import ChatSpeechEvent, UnitySpeechEvent
+from dataclass import HimeSpeechEvent, UnitySpeechEvent
 from pydub import AudioSegment, exceptions
 from pydub.utils import make_chunks
 import time
@@ -11,14 +11,16 @@ class TTS:
     def __init__(self):
         speech_config = speechsdk.SpeechConfig(subscription=os.environ.get("SPEECH_KEY"), region=os.environ.get("SPEECH_REGION"))
         speech_config.set_speech_synthesis_output_format(speechsdk.SpeechSynthesisOutputFormat.Ogg48Khz16BitMonoOpus)
-        self.speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+        audio_config = speechsdk.audio.AudioOutputConfig(filename="tts.wav")
+        self.speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
         self.speech_xml = ""
 
         with open("ssml.xml", "r") as f:
             self.speech_xml = f.read()
     
     def _format_ssml(self, message: str, emotion: str):
-        self.speech_xml.replace("[text]", message).replace("[emotion]", emotion)
+        return self.speech_xml.replace("[text]", message).replace("[emotion]", f"\"{emotion}\"")
+
 
     
     async def generate_tts(self, message: str, emotion: str):
@@ -48,26 +50,20 @@ class TTS:
 
 async def tts_loop(tts: TTS, tts_queue: Queue, speech_queue: Queue):
     while True:
-        message: ChatSpeechEvent = await tts_queue.get()
+        message: HimeSpeechEvent = await tts_queue.get()
         try:
-            if message.response_text is not None:
-                response = " ".join(message.response_text)
-                print("TTS: Generating TTS for message: ", response)
-                for i in range(len(message.response_text)):
-                    start = time.time()
-                    speech_fragment = message.response_text[i]
-                    speech_emotion = message.emotions[i]
-                    res = await tts.generate_tts(speech_fragment, speech_emotion)
-                    if res is not None:
-                        if i == 0:
-                            new_event = UnitySpeechEvent("NewSpeech", response, speech_fragment, speech_emotion, res)
-                        if i == len(message.response_text) - 1:
-                            new_event = UnitySpeechEvent("EndSpeech", response, speech_fragment, speech_emotion, res)
-                        else:
-                            new_event = UnitySpeechEvent("ContinueSpeech", response, speech_fragment, speech_emotion, res)
-                        speech_queue.put_nowait(new_event)
-                    end = time.time()
-                    print(f"TTS Time: {end - start - res.time}s for message: {speech_fragment}")
+            if message.type == "EndSpeech":
+                print("TTS: EndSpeech received")
+                speech_queue.put_nowait(UnitySpeechEvent("EndSpeech", "EndSpeech", "EndSpeech", None))
+                continue
+
+            print("TTS: Generating TTS for message: ", message.response)
+            start = time.time()
+            res = await tts.generate_tts(message.response, message.emotion)
+            if res is not None:
+                speech_queue.put_nowait(UnitySpeechEvent(message.type, message.response, message.emotion, res))
+            end = time.time()
+            print(f"TTS Time: {end - start}s for message: {message.response}")
         except asyncio.CancelledError as e:
             raise e
 
