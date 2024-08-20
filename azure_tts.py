@@ -2,8 +2,6 @@ import azure.cognitiveservices.speech as speechsdk
 import asyncio
 from asyncio.queues import Queue
 from dataclass import HimeSpeechEvent, UnitySpeechEvent
-from pydub import AudioSegment, exceptions
-from pydub.utils import make_chunks
 import time
 import os
 
@@ -29,12 +27,13 @@ class TTS:
             loop = asyncio.get_event_loop()
             result: speechsdk.SpeechSynthesisResult = await loop.run_in_executor(None, future.get)
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-                try: 
-                    # return await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(result.audio_data))
-                    return result.audio_data
-                except exceptions.CouldntDecodeError:
-                    print("Voice: Failed to decode audio segment")
-                    return None
+                return result.audio_data
+                # try: 
+                #     # return await asyncio.to_thread(AudioSegment.from_file, io.BytesIO(result.audio_data))
+                #     return result.audio_data
+                # # except exceptions.CouldntDecodeError:
+                # #     print("Voice: Failed to decode audio segment")
+                # #     return None
     
             # something done goofed
             elif result.reason == speechsdk.ResultReason.Canceled:

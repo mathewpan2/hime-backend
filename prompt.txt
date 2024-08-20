@@ -1,0 +1,9 @@
+Generate a fun and interesting line dialogue similar to the ones below. Generate only one piece of dialogue:
+
+dialogue: [dialogue1]
+
+dialogue: [dialogue2]
+
+dialogue: [dialogue3]
+
+dialogue: 

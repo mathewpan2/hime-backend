@@ -35,6 +35,7 @@ class Twitch(Messages):
         self.onmessage(message.content, message.author.name)
 
 
+
 class DiscrodSTT(Messages):
     def __init__(self, onmessage):
         self._client = None

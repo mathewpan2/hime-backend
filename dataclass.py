@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from pydub import AudioSegment
 from typing import List
 
 
@@ -45,6 +44,7 @@ class UnitySpeechEvent():
     emotion: str = field(default=None)
     audio: bytes = field(default=None)
 
+
 @dataclass
 class TTSEvent:
     message : str = field(default=None, compare=False)
@@ -64,9 +64,6 @@ class TTSResponse:
 class getCurrentResponse:
     type: str = field(default=None)
     response: str = field(default=None)
-    def __init__(self, response):
-        self.type = "getCurrentResponse"
-        self.response = response
 
 @dataclass
 class customSpeechRequest:
@@ -77,4 +74,31 @@ class customSpeechRequest:
         self.type = "customSpeechRequest"
         self.response = response
         self.emotion = emotion
+
+# helpers
+parameters = {
+    'model_path': 'gemma-2-2b-it-Q5_K_M.gguf',
+    'do_sample': True,
+    'n_ctx': 8000,
+    'temperature': 0.32,
+    'top_p': 0.01,
+    'typical_p': 1,
+    'epsilon_cutoff': 0,
+    'eta_cutoff': 0,
+    'n_gpu_layers': -1,
+    'tfs': 1,
+    'top_a': 0,
+    'repetition_penalty': 1.24,
+    'encoder_repetition_penalty': 1,
+    'top_k': 44,
+    'num_beams': 1,
+    'penalty_alpha': 0,
+    'min_length': 0,
+    'length_penalty': 1.0,
+    'no_repeat_ngram_size': 0,
+    'early_stopping': False,
+    'mirostat_mode': 0,
+    'mirostat_tau': 5.0,
+    'mirostat_eta': 0.1,
+}
 
