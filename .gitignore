@@ -2,4 +2,4 @@
 __pycache__/*
 .env
 gemma-2-2b-it-Q5_K_M.gguf
-\tts.wav
+tts.wav
