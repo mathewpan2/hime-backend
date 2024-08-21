@@ -13,7 +13,7 @@ class TTS:
         self.speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
         self.speech_xml = ""
 
-        with open("ssml.xml", "r") as f:
+        with open(os.path.join("data", "ssml.xml"), "r") as f:
             self.speech_xml = f.read()
     
     def _format_ssml(self, message: str, emotion: str):

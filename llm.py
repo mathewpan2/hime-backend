@@ -87,9 +87,9 @@ class PromptLLM():
         # self.llm: Llama = Llama(**parameters)
         self.llm = AsyncOpenAI(api_key=os.environ.get("OPENAI_KEY"))
         self.running = True
-        with open("prompt.txt") as f:
+        with open(os.path.join("data", "prompt.txt")) as f:
             self.prompt = f.read()
-        with open("questions.txt") as f:
+        with open(os.path.join("data", "questions.txt")) as f:
             self.questions = f.readlines()
         # self.prompt = f"<start_of_turn>user\n{question}<end_of_turn>\n<start_of_turn>model\n"
         
