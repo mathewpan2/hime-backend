@@ -8,10 +8,12 @@ class ChatSpeechEvent():
     priority: int = 0
     user_message: str = field(default=None, compare=False)
     user_name: str = field(default=None, compare=False)
-    def __init__(self, user_message, user_name):
+    platform: str = field(default=None, compare=False)
+    def __init__(self, user_message, user_name, platform):
         self.priority = 0 #TODO: implement priority
         self.user_message = user_message
         self.user_name = user_name
+        self.platform = platform
 
 
 
@@ -21,6 +23,7 @@ class HimeSpeechEvent():
     prompt: str = field(default=None)
     response: str = field(default=None)
     emotion: str = field(default=None)
+    platform: str = field(default='chat')
 
 
 

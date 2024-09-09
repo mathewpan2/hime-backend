@@ -1,0 +1,59 @@
+- role: system
+  content: |
+    You are an expert at creative writing. You will generate chat messages that are humorous and aligned with internet culture. Your chat messages should be natural and interesting, able to prompt snappy responses from the user. These chat messages do not always have to be questions, and can be statements or exclamations.
+
+- role: user
+  content: |
+    Generate chat messages to the ones below. Generate only one chat message:
+
+    dialogue: you're not normal 
+
+    dialogue: you look cute today
+
+    dialogue: can we get a posture check?
+
+    dialogue: 
+- role: assistant
+  content: |
+    You look like a potato.
+- role: user
+  content: |
+    Generate chat messages to the ones below. Generate only one chat message:
+
+    dialogue: I really just sit here all day and watch streams.
+
+    dialogue: what do you do on your days off?
+
+    dialogue: do you ever go outside?
+
+    dialogue: 
+- role: assistant
+  content: |
+    how are days like in the insane asylum?
+- role: user
+  content: |
+    Generate chat messages to the ones below. Generate only one chat message:
+
+    dialogue: you should know being a vtuber comes with stigma
+
+    dialogue: woman moment
+
+    dialogue: are you pretending to be bad
+
+    dialogue: 
+- role: assistant
+  content: |
+    please bark for me streamer.
+- role: user
+  content: |
+    Generate dialogue similar to the ones below. Generate only one piece of dialogue:
+
+    dialogue: [dialogue1]
+
+    dialogue: [dialogue2]
+
+    dialogue: [dialogue3]
+
+    dialogue: 
+
+    

@@ -19,10 +19,11 @@ from control_panel import  ControlPanel, control_panel_loop
 from llama_cpp import Llama
 from dataclass import parameters
 from osu import Osu, osu_listen_loop
+from profanity_filter import ProfanityFilter
 
 # Queues
 
-chat_queue = PriorityQueue(maxsize=1)
+chat_queue = PriorityQueue(maxsize=3)
 message_queue = PriorityQueue(maxsize=10)
 tts_queue = Queue(maxsize=10)
 speech_queue = Queue(maxsize=10)
@@ -55,8 +56,8 @@ def add_chat_message(message: str, user: str):
         print("Chat message queue is full, message dropped")
 
 
-def add_message(message: str, user: str):
-    speech_event = ChatSpeechEvent(message, user)
+def add_message(message: str, user: str, platform:str = ''):
+    speech_event = ChatSpeechEvent(message, user, platform)
     try: 
         message_queue.put_nowait(speech_event)
         print(f"Chat message added to queue ({user}|{speech_event.priority}): {message}")
@@ -74,6 +75,7 @@ async def main():
     classifier = EmotionsClassifier()
     messages = Twitch(onmessage=add_chat_message)
     prompt = PromptLLM(add_message)
+    filter = ProfanityFilter()
     not_speaking_event.set()
     async with asyncio.TaskGroup() as tg:
         tg.create_task(llm.listen())
@@ -84,9 +86,9 @@ async def main():
         tg.create_task(control_panel_loop(control, unity, talking_event))
         tg.create_task(unity_loop(unity, control, speech_queue, not_speaking_event))
         tg.create_task(unity_listen_loop(unity, not_speaking_event))
-        tg.create_task(llm_loop(llm, classifier, message_queue, tts_queue))
+        tg.create_task(llm_loop(llm, filter, classifier, message_queue, tts_queue))
         tg.create_task(tts_loop(tts, tts_queue, speech_queue))
-        tg.create_task(prompt_gen_loop(prompt, chat_queue , not_speaking_event, talking_event, message_queue_empty))
+        tg.create_task(prompt_gen_loop(prompt, filter, chat_queue , not_speaking_event, talking_event, message_queue_empty))
         tg.create_task(osu_listen_loop(osu, talking_event))
         # tg.create_task(speech_loop(speech_queue, tts))
         print(f"started at {time.strftime('%X')}")

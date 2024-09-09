@@ -58,6 +58,8 @@ async def tts_loop(tts: TTS, tts_queue: Queue, speech_queue: Queue):
 
             print("TTS: Generating TTS for message: ", message.response)
             start = time.time()
+            if message.platform == "chat" and message.type == "NewSpeech":
+                message.response = message.prompt + " " + message.response
             res = await tts.generate_tts(message.response, message.emotion)
             if res is not None:
                 speech_queue.put_nowait(UnitySpeechEvent(message.type, message.response, message.emotion, res))

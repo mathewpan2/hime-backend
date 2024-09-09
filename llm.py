@@ -15,7 +15,8 @@ from dataclass import parameters
 import random
 from openai import AsyncOpenAI
 import os
-
+from profanity_filter import ProfanityFilter
+import yaml 
 class EmotionsClassifier():
     def __init__(self):
         self._model = pipeline("zero-shot-classification",model="facebook/bart-large-mnli", device=0)
@@ -46,7 +47,7 @@ class LLM(WS):
         return HimeResponse(**json.loads(response))
 
 
-async def llm_loop(llm: LLM, classifier: EmotionsClassifier, message_queue: PriorityQueue, tts_queue: Queue):
+async def llm_loop(llm: LLM, filter: ProfanityFilter, classifier: EmotionsClassifier, message_queue: PriorityQueue, tts_queue: Queue):
     while True:
         message: ChatSpeechEvent = await message_queue.get()
         try: 
@@ -61,11 +62,22 @@ async def llm_loop(llm: LLM, classifier: EmotionsClassifier, message_queue: Prio
 
         if response is not None:
             try:
+                profane = False
                 while response.type != "EndSpeech":
                     loop = asyncio.get_event_loop()
                     print(response.response)
+
+                    if profane:
+                        response.response = ""
+
+                    elif filter.isProfane(response.response):
+                        response.response = "1984"
+                        profane = True
+                    
                     # emotion = await loop.run_in_executor(None, classifier.classify_emotion, response.response)
+
                     emotion = "default"
+
                     tts = HimeSpeechEvent(response.type, message.user_message, response.response, emotion)
                     tts_queue.put_nowait(tts)
                     response = await llm.receive_response()
@@ -87,8 +99,10 @@ class PromptLLM():
         # self.llm: Llama = Llama(**parameters)
         self.llm = AsyncOpenAI(api_key=os.environ.get("OPENAI_KEY"))
         self.running = True
-        with open(os.path.join("data", "prompt.txt")) as f:
-            self.prompt = f.read()
+        with open(os.path.join("data", "prompt.yaml")) as f:
+            self.prompt = yaml.safe_load(f)
+        # with open(os.path.join("data", "prompt.txt")) as f:
+        #     self.prompt = f.read()
         with open(os.path.join("data", "questions.txt")) as f:
             self.questions = f.readlines()
         # self.prompt = f"<start_of_turn>user\n{question}<end_of_turn>\n<start_of_turn>model\n"
@@ -100,15 +114,29 @@ class PromptLLM():
         # prompt = self.llm(self.prompt, max_tokens=50, seed=int(seed), stream=False)
         # return prompt['choices'][0]['text']
         questions = random.sample(self.questions, 3)
-        prompt = self.prompt.replace("[dialogue1]", questions[0]).replace("[dialogue2]", questions[1]).replace("[dialogue3]", questions[2])
+        prompt = self.prompt[7]['content'].replace("[dialogue1]", questions[0]).replace("[dialogue2]", questions[1]).replace("[dialogue3]", questions[2])
+        # prompt = self.prompt.replace("[dialogue1]", questions[0]).replace("[dialogue2]", questions[1]).replace("[dialogue3]", questions[2])
+        # res = await self.llm.chat.completions.create(
+        #     messages=[{"role":"user", "content": prompt}],
+        #     model="gpt-4o-mini"
+        # )
         res = await self.llm.chat.completions.create( 
-            messages=[{"role": "user", "content": prompt}], model="gpt-3.5-turbo"
+            messages=[{"role": "system", "content": self.prompt[0]['content']},
+                      {"role": "user", "content": self.prompt[1]['content']},
+                      {"role": "assistant", "content": self.prompt[2]['content']},
+                      {"role": "user", "content": self.prompt[3]['content']},
+                      {"role": "assistant", "content": self.prompt[4]['content']},
+                      {"role": "user", "content": self.prompt[5]['content']},
+                      {"role": "assistant", "content": self.prompt[6]['content']},
+                      {"role": "user", "content": prompt},
+                      ]
+                      ,model="gpt-4o-mini"
         )
 
         return res.choices[0].message.content
 
 
-async def prompt_gen_loop(prompt: PromptLLM, chat_queue: PriorityQueue, not_speaking_event: asyncio.Event, talking_event: asyncio.Event, message_queue_empty):
+async def prompt_gen_loop(prompt: PromptLLM, filter: ProfanityFilter, chat_queue: PriorityQueue, not_speaking_event: asyncio.Event, talking_event: asyncio.Event, message_queue_empty):
     while True:
         await talking_event.wait()
         await not_speaking_event.wait()
@@ -118,7 +146,10 @@ async def prompt_gen_loop(prompt: PromptLLM, chat_queue: PriorityQueue, not_spea
             # prompt_gen = await loop.run_in_executor(None, prompt.generate_prompt)
             if chat_queue.empty():
                 prompt_gen = await prompt.generate_prompt()
-                prompt.add_message(prompt_gen, "anon")
+                prompt.add_message(prompt_gen.replace("dialogue:", ""), "anon", "chat")
             else:
                 chat: ChatSpeechEvent = chat_queue.get_nowait()
-                prompt.add_message(chat.user_message, chat.user_name)
+                if filter.isProfane(chat.user_message):
+                    continue
+                prompt.add_message(chat.user_message, chat.user_name, "chat")
+                
